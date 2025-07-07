@@ -1,4 +1,4 @@
-Smart City.py
+# Smart City.py
 
 # ┌────────────────────────────────────────────────────────────┐
 # │               SMART CITY TRAFFIC FORECASTING               │
@@ -70,11 +70,11 @@ for j in sorted(train['Junction'].unique()):
 
 # 8. Combine and Save
 final = pd.concat(results).sort_values('ID')
-final.to_csv("Submission.csv", index=False)
-print("\n✅ Submission.csv created.")
+final.to_csv("SubmissionFile.csv", index=False)
+print("\n✅ SubmissionFile.csv created.")
 
 # 9. Download file
-files.download("Submission.csv")
+files.download("SubmissionFile.csv")
 
 # ───────────────────────────────────────────────
 # 📊 GRAPH 1: Forecast (Junction 1)
