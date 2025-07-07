@@ -12,8 +12,7 @@ This project builds an intelligent forecasting system using time series and help
 
 ## Dataset
 The dataset provided consists of two parts:
-
-  File Name             | Description                                        
+  File Name            | Description                                        
  `train_aWnotuB.csv`   | Historical traffic data with timestamps, junction ID, and vehicle counts 
  `test_BdBKkAj.csv`    | Future timestamps for which traffic needs to be forecasted 
 
@@ -49,7 +48,7 @@ Shows predicted vehicle count over time along with upper and lower bounds to acc
 Highlights how traffic volume varies across weekdays and weekends, helping identify peak days for each junction.
 
 ## Output Format
-The final output `submission.csv` contains:
+The final output `SubmissionFile.csv` contains:
 - `ID` – Corresponds to test data ID
 - `Vehicles` – Forecasted number of vehicles
 - `Lower_Bound`, `Upper_Bound` – Confidence interval for traffic prediction
