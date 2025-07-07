@@ -1,0 +1,112 @@
+Smart City.py
+
+# ┌────────────────────────────────────────────────────────────┐
+# │               SMART CITY TRAFFIC FORECASTING               │
+# └────────────────────────────────────────────────────────────┘
+
+# 1. Install Prophet
+!pip install prophet --quiet
+
+# 2. Import Libraries
+import pandas as pd
+import numpy as np
+from prophet import Prophet
+import matplotlib.pyplot as plt
+import seaborn as sns
+from google.colab import files
+from prophet.make_holidays import make_holidays_df
+
+# 3. Upload Files
+print("📁 Please upload: train_aWnotuB.csv and test_BdBKkAj.csv")
+uploaded = files.upload()
+
+# 4. Load Data
+train = pd.read_csv("train_aWnotuB.csv", parse_dates=['DateTime'])
+test = pd.read_csv("test_BdBKkAj.csv", parse_dates=['DateTime'])
+
+# 5. Feature Engineering
+train['hour'] = train['DateTime'].dt.hour
+train['day'] = train['DateTime'].dt.dayofweek
+train['is_weekend'] = train['day'].isin([5, 6]).astype(int)
+train['weekday'] = train['DateTime'].dt.day_name()
+
+# 6. Custom + India Holidays
+holidays = make_holidays_df(year_list=[2015, 2016, 2017], country='IN')
+custom_festivals = pd.DataFrame({
+    'holiday': 'city_festival',
+    'ds': pd.to_datetime(['2015-10-25', '2016-10-13', '2017-11-01']),
+    'lower_window': 0,
+    'upper_window': 1
+})
+all_holidays = pd.concat([holidays, custom_festivals])
+
+# 7. Forecast per Junction
+results = []
+
+for j in sorted(train['Junction'].unique()):
+    print(f"📈 Forecasting for Junction {j}")
+    df_j = train[train['Junction'] == j][['DateTime', 'Vehicles']].rename(columns={'DateTime': 'ds', 'Vehicles': 'y'})
+    
+    model = Prophet(
+        yearly_seasonality=True,
+        weekly_seasonality=True,
+        daily_seasonality=False,
+        holidays=all_holidays
+    )
+    model.add_seasonality(name='hourly', period=24, fourier_order=5)
+    model.fit(df_j)
+
+    test_j = test[test['Junction'] == j].copy().rename(columns={'DateTime': 'ds'})
+    forecast = model.predict(test_j[['ds']])
+    
+    result = pd.DataFrame({
+        'ID': test_j['ID'],
+        'Vehicles': forecast['yhat'].round().astype(int),
+        'Lower_Bound': forecast['yhat_lower'].round().astype(int),
+        'Upper_Bound': forecast['yhat_upper'].round().astype(int),
+        'Junction': j
+    })
+    results.append(result)
+
+# 8. Combine and Save
+final = pd.concat(results).sort_values('ID')
+final.to_csv("Submission.csv", index=False)
+print("\n✅ Submission.csv created.")
+
+# 9. Download file
+files.download("Submission.csv")
+
+# ───────────────────────────────────────────────
+# 📊 GRAPH 1: Forecast (Junction 1)
+# ───────────────────────────────────────────────
+
+j1_plot = final[final.Junction==1].reset_index(drop=True)
+
+plt.figure(figsize=(10,4))
+plt.plot(j1_plot['Vehicles'], label="Predicted", color='steelblue')
+plt.fill_between(j1_plot.index, j1_plot['Lower_Bound'], j1_plot['Upper_Bound'],
+                 color='lightblue', alpha=0.4, label="Confidence Interval")
+plt.title("Traffic Forecast – Junction 1", fontsize=14)
+plt.xlabel("Time Step", fontsize=12)
+plt.ylabel("Vehicles", fontsize=12)
+plt.grid(True, linestyle='--', alpha=0.4)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# ───────────────────────────────────────────────
+# 📊 GRAPH 2: Avg Vehicles per Day of Week
+# ───────────────────────────────────────────────
+
+weekday_avg = train.groupby('weekday')['Vehicles'].mean()
+weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+weekday_avg = weekday_avg.reindex(weekday_order)
+
+plt.figure(figsize=(8,4))
+weekday_avg.plot(kind='bar', color='mediumseagreen', edgecolor='black')
+plt.title("Average Traffic by Day of Week", fontsize=14)
+plt.ylabel("Avg Vehicles", fontsize=12)
+plt.xticks(rotation=45)
+plt.grid(axis='y', linestyle='--', alpha=0.5)
+plt.tight_layout()
+plt.show()
